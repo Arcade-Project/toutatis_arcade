@@ -14,7 +14,6 @@ import re
 
 
 def getID(username):
-    #iduser = re.search(r'"id":"(\d+)"', r.text).group(1)
     url = f'https://www.instagram.com/{username}'
     r = requests.get(url)
     iduser = re.search(r'"id":"(\d+)"', r.text).group(1)
