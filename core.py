@@ -46,6 +46,7 @@ def getInfo(sessionId, iduser):
     ).json()["user"]
     
     infoUser = response
+    
     infoUser["userID"] = userId["id"]
     
     return {"user":infoUser, "error":None}
@@ -81,67 +82,48 @@ def advanced_lookup(username):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--sessionid',help="Instagram session ID",required=True)
-    parser.add_argument('-u','--username',help="One username",required=True)
+    parser.add_argument('-s', '--sessionid', help="Instagram session ID", required=True)
+    parser.add_argument('-u', '--username', help="One username", required=True)
     args = parser.parse_args()
 
-    sessionsId=args.sessionid
-    iduser = getID(args.username)
+    session_id = args.sessionid
+    user_id = getID(args.username)
 
-    infos = getInfo(sessionsId, iduser)["user"]
+    infos = getInfo(session_id, user_id)["user"]
 
-    
-    print("userID                 : "+str(infos["userID"]))
-    print("Full Name              : "+str(infos["full_name"]))
-    print("Verified               : "+str(infos['is_verified'])+" | Is buisness Account : "+str(infos["is_business"]))
-    print("Is private Account     : "+str(infos["is_private"]))
-    print("Follower               : "+str(infos["follower_count"]) + " | Following : "+str(infos["following_count"]))
-    print("Number of posts        : "+str(infos["media_count"]))
-    if infos["external_url"]:
-        print("External url           : "+infos["external_url"])
-    print("IGTV posts             : "+str(infos["total_igtv_videos"]))
-    print("Biography              : "+(f"""\n{" "*25}""").join(infos["biography"].split("\n")))
-    
-    if "public_email" in infos.keys():
-        if infos["public_email"]:
-            print("Public Email           : "+infos["public_email"])
-    if "public_phone_number" in infos.keys():
-        if str(infos["public_phone_number"]):
-            phonenr = "+"+str(infos["public_phone_country_code"])+" "+str(infos["public_phone_number"])
-            try:
-                pn = phonenumbers.parse(phonenr)
-                countrycode = region_code_for_country_code(pn.country_code)
-                country = pycountry.countries.get(alpha_2=countrycode)
-                phonenr = phonenr + " ({}) ".format(country.name)
-            except: # except what ??
-                pass # pass what ??
-            print("Public Phone number    : " + phonenr)
+    output_json = {
+        "userID": infos["userID"],
+        "Full Name": infos["full_name"],
+        "Verified": infos['is_verified'],
+        "Is business Account": infos["is_business"],
+        "Is private Account": infos["is_private"],
+        "Follower": infos["follower_count"],
+        "Following": infos["following_count"],
+        "Number of posts": infos["media_count"],
+        "External url": infos.get("external_url", ""),
+        "IGTV posts": infos["total_igtv_videos"],
+        "Biography": "\n".join(infos["biography"].split("\n")),
+        "Public Email": infos.get("public_email", ""),
+        "Public Phone number": "+" + str(infos.get("public_phone_country_code", "")) + " " + str(infos.get("public_phone_number", "")),
+        "Obfuscated email": "",
+        "Obfuscated phone": "",
+        "Profile Picture": infos["hd_profile_pic_url_info"]["url"]
+    }
 
-    other_infos=advanced_lookup(args.username)
+    other_infos = advanced_lookup(args.username)
     
     if other_infos["error"] == "rate limit":
-        print("Rate limit please wait a few minutes before you try again")
-    
-    elif "message" in other_infos["user"].keys():
+        output_json["Rate Limit"] = "Please wait a few minutes before you try again"
+    elif "message" in other_infos["user"]:
         if other_infos["user"]["message"] == "No users found":
-            print("The lookup did not work on this account")
+            output_json["Lookup Status"] = "The lookup did not work on this account"
         else:
-            print(other_infos["user"]["message"])
-    
+            output_json["Lookup Status"] = other_infos["user"]["message"]
     else:
-        if "obfuscated_email" in other_infos["user"].keys():
-            if other_infos["user"]["obfuscated_email"]:
-                print("Obfuscated email       : "+other_infos["user"]["obfuscated_email"])
-            else:
-                print("No obfuscated email found")
+        output_json["Obfuscated email"] = other_infos["user"].get("obfuscated_email", "")
+        output_json["Obfuscated phone"] = other_infos["user"].get("obfuscated_phone", "")
 
-        if "obfuscated_phone"in other_infos["user"].keys():
-            if str(other_infos["user"]["obfuscated_phone"]):
-                print("Obfuscated phone       : "+str(other_infos["user"]["obfuscated_phone"]))
-            else:
-                print("No obfuscated phone found")
-    print("-"*24)
-    print("Profile Picture        : "+infos["hd_profile_pic_url_info"]["url"])
+    print(dumps(output_json, indent=4))
 
 
 if __name__ == "__main__":
