@@ -10,6 +10,16 @@ from phonenumbers.phonenumberutil import (
 )
 import pycountry
 
+import re
+
+
+def getID(username):
+    #iduser = re.search(r'"id":"(\d+)"', r.text).group(1)
+    url = f'https://www.instagram.com/{username}'
+    r = requests.get(url)
+    iduser = re.search(r'"id":"(\d+)"', r.text).group(1)
+    return iduser
+
 def getUserId(username,sessionsId, iduser):
     cookies = {'sessionid': sessionsId}
     headers = {'User-Agent': 'Instagram 64.0.0.14.96'}
@@ -74,11 +84,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--sessionid',help="Instagram session ID",required=True)
     parser.add_argument('-u','--username',help="One username",required=True)
-    parser.add_argument('-i','--iduser',help="id",required=True)
     args = parser.parse_args()
 
     sessionsId=args.sessionid
-    iduser = args.iduser
+    iduser = getID(args.username)
 
     infos = getInfo(sessionsId, iduser)["user"]
 
